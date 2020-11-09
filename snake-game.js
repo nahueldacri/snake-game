@@ -1,4 +1,4 @@
-// First pattern created
+// Variables
 
 var canvas = null,
 ctx = null,
@@ -15,7 +15,10 @@ KEY_ENTER = 13;
 var dir = 0,
 score = 0;
 
-var pause = true;
+var pause = true,
+gameover = true;
+
+var wall = [];
 
 window.requestAnimationFrame = (function () {
     return window.requestAnimationFrame || 
@@ -26,11 +29,9 @@ window.requestAnimationFrame = (function () {
 }; }());
 
 // Init the game
-
 function init() {
 
 // Get canvas and context
-
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
@@ -38,43 +39,59 @@ function init() {
     player = new Rectangle(40,40,5,5);
     food = new Rectangle(80,80,5,5);
 
-// Start the game
+// Create walls
+    wall.push(new Rectangle(100, 50, 10, 10));
+    wall.push(new Rectangle(100, 100, 10, 10));
+    wall.push(new Rectangle(200, 50, 10, 10));
+    wall.push(new Rectangle(200, 100, 10, 10));
 
+// Start the game
     run();
     repaint();
 }
 
 // Painting the snake
-
 function paint(ctx) {   
+    var i = 0,
+        l = 0;
 
 // Clean canvas
-
     ctx.fillStyle = '#000';
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
 // Draw player
-
     ctx.fillStyle = '#fff';
     player.fill(ctx);
 
-// Draw food
-    
+// Draw food 
     ctx.fillStyle = '#ff0';
     food.fill(ctx);
 
-// Draw pause
+// Draw walls
+    ctx.fillStyle = '#f00';
+    for (i = 0, l = wall.length; i < l; i += 1) {
+    wall[i].fill(ctx);
+    }
 
+// Debug last key pressed
+    ctx.fillStyle = '#fff';
+
+// Draw pause
     if (pause) {
         ctx.textAlign = 'center';
-        ctx.fillText('PAUSE', 150, 75);
+        if (gameover) {
+            ctx.fillStyle = '#f00';
+            ctx.fillText('GAME OVER', 150,75);
+        }else{
+            ctx.fillStyle = '#fff';
+            ctx.fillText('PAUSE', 150, 75);
+        }
         ctx.textAlign = 'left';
     }
 
 // Draw score
-
-ctx.fillText('Score: ' + score, 0, 10);
-
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Score: ' + score, (canvas.width - 50), 10);
 }
 
 function run() {
@@ -88,10 +105,15 @@ function repaint() {
 }
       
 function act(){
+    var i,
+        l;
     if(!pause) {
-
+// GameOver Reset
+        if (gameover) {
+            reset();
+        }
+    
 // Detect direction
-
         if (lastPress == KEY_UP) {
             dir = 0;
             }
@@ -106,7 +128,6 @@ function act(){
         } 
 
 // Move rect
-
         if (dir == 0) {
             player.y -= 5;
             }
@@ -120,8 +141,7 @@ function act(){
             player.x -= 5;
             }  
 
-// Out Screen
-        
+// Out Screen    
         if (player.x > canvas.width) {
             player.x = 0;
             }
@@ -134,19 +154,30 @@ function act(){
         if (player.y < 0) {
             player.y = canvas.height;
             } 
+// Food Intersects
+        if (player.intersects(food)) {
+            score += 10;
+            food.x = random(canvas.width / 5 - 1) * 5;
+            food.y = random(canvas.height / 5 - 1) * 5;
         }
-// Pause/Unpause
 
+// Wall Intersects
+        for (i = 0, l = wall.length; i < l; i += 1) {
+            if (food.intersects(wall[i])) {
+                food.x = random(canvas.width / 5 - 1) * 5;
+                food.y = random(canvas.height / 5 - 1) * 5;
+            }
+            if (player.intersects(wall[i])) {
+                gameover = true;
+                pause = true;
+            }
+        }    
+    }
+// Pause/Unpause
     if (lastPress == KEY_ENTER) {
         pause = !pause;
         lastPress = null;
     } 
-// Food Intersects
-    if (player.intersects(food)) {
-        score += 10;
-        food.x = random(canvas.width / 5 - 1) * 5;
-        food.y = random(canvas.height / 5 - 1) * 5;
-    }
 }
 
 window.addEventListener('load', init, false);
@@ -182,8 +213,18 @@ function Rectangle(x, y, width, height) {
 }
 
 // Random number for the food
-
 function random(max) {
     return Math.floor(Math.random() * max);
+}
+
+// Reset the game 
+function reset() {
+    score = 0;
+    dir = 1;
+    player.x = 40;
+    player.y = 40;
+    food.x = random(canvas.width / 5 - 1) * 5;
+    food.y = random(canvas.height / 5 - 1) * 5;
+    gameover = false;
 }
     
