@@ -1,12 +1,10 @@
 // First pattern created
 
 var canvas = null,
-ctx = null;
-
-var x = 150,
-y = 75;
-
-var lastPress = null;
+ctx = null,
+player = null,
+lastPress = null, 
+food = null;
 
 var KEY_LEFT = 37,
 KEY_UP = 38,
@@ -14,7 +12,8 @@ KEY_RIGHT = 39,
 KEY_DOWN = 40,
 KEY_ENTER = 13;
 
-var dir = 0;
+var dir = 0,
+score = 0;
 
 var pause = true;
 
@@ -26,11 +25,21 @@ window.requestAnimationFrame = (function () {
            window.setTimeout(callback, 17); 
 }; }());
 
-// Start the game
+// Init the game
 
 function init() {
+
+// Get canvas and context
+
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
+
+// Create player and food
+    player = new Rectangle(40,40,5,5);
+    food = new Rectangle(80,80,5,5);
+
+// Start the game
+
     run();
     repaint();
 }
@@ -38,12 +47,22 @@ function init() {
 // Painting the snake
 
 function paint(ctx) {   
+
+// Clean canvas
+
     ctx.fillStyle = '#000';
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
+// Draw player
+
     ctx.fillStyle = '#fff';
-    ctx.fillRect(x, y, 10, 10);
+    player.fill(ctx);
+
+// Draw food
     
+    ctx.fillStyle = '#ff0';
+    food.fill(ctx);
+
 // Draw pause
 
     if (pause) {
@@ -51,6 +70,11 @@ function paint(ctx) {
         ctx.fillText('PAUSE', 150, 75);
         ctx.textAlign = 'left';
     }
+
+// Draw score
+
+ctx.fillText('Score: ' + score, 0, 10);
+
 }
 
 function run() {
@@ -84,31 +108,31 @@ function act(){
 // Move rect
 
         if (dir == 0) {
-            y -= 10;
+            player.y -= 5;
             }
         if (dir == 1) {
-            x += 10;
+            player.x += 5;
             }
         if (dir == 2) {
-            y += 10;
+            player.y += 5;
             }
         if (dir == 3) {
-            x -= 10;
+            player.x -= 5;
             }  
 
 // Out Screen
         
-        if (x > canvas.width) {
-            x = 0;
+        if (player.x > canvas.width) {
+            player.x = 0;
             }
-        if (y > canvas.height) {
-            y = 0;
+        if (player.y > canvas.height) {
+            player.y = 0;
             }
-        if (x < 0) {
-            x = canvas.width;
+        if (player.x < 0) {
+            player.x = canvas.width;
             }
-        if (y < 0) {
-            y = canvas.height;
+        if (player.y < 0) {
+            player.y = canvas.height;
             } 
         }
 // Pause/Unpause
@@ -116,7 +140,13 @@ function act(){
     if (lastPress == KEY_ENTER) {
         pause = !pause;
         lastPress = null;
-        }                       
+    } 
+// Food Intersects
+    if (player.intersects(food)) {
+        score += 10;
+        food.x = random(canvas.width / 5 - 1) * 5;
+        food.y = random(canvas.height / 5 - 1) * 5;
+    }
 }
 
 window.addEventListener('load', init, false);
@@ -125,4 +155,35 @@ document.addEventListener('keydown', function (evt) {
     lastPress = evt.which;
     }, false);
     
+function Rectangle(x, y, width, height) {
+    this.x = (x == null) ? 0 : x;
+    this.y = (y == null) ? 0 : y;
+    this.width = (width == null) ? 0 : width;
+    this.height = (height == null) ? this.width : height;
+    
+    this.intersects = function (rect) {
+        if (rect == null) {
+            window.console.warn('Missing parameters on function intersects');
+        } else {
+            return (this.x < rect.x + rect.width &&
+                this.x + this.width > rect.x &&
+                this.y < rect.y + rect.height &&
+                this.y + this.height > rect.y);
+        }
+    };
+    
+    this.fill = function (ctx) {
+        if (ctx == null) {
+            window.console.warn('Missing parameters on function fill');
+        } else {
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+    };
+}
 
+// Random number for the food
+
+function random(max) {
+    return Math.floor(Math.random() * max);
+}
+    
