@@ -7,7 +7,8 @@ var canvas = null,
 ctx = null,
 player = null,
 lastPress = null, 
-food = null;
+food = null,
+specialFruit = null;
 
 var KEY_LEFT = 37,
 KEY_UP = 38,
@@ -20,13 +21,15 @@ score = 0;
 
 var pause = true,
 gameover = true,
-congratulations = true;
+congratulations = true,
+bonusFruit = false;
 
 var wall = [];
 var body = [];
 
 var iBody = new Image();
 var iFood = new Image();
+var iSpecialFruit = new Image();
 
 var aEat = new Audio();
 var aDie = new Audio();
@@ -147,6 +150,7 @@ function init() {
 // Load assets
     iBody.src = 'assets/body.png';
     iFood.src = 'assets/fruit.png';
+    iSpecialFruit.src = 'assets/special-fruit.png';
     aEat.src = 'assets/eat-snake.mp3';
     aDie.src = 'assets/die-snake.mp3';
 
@@ -159,6 +163,7 @@ function init() {
 // Create body and food
     player = new Rectangle(20,20,10,10);
     food = new Rectangle(80,80,10,10);
+    specialFruit = new Rectangle(100,100,20,20);
 
 // Create walls
     wall.push(new Rectangle(0, 0, 600, 5));
@@ -170,7 +175,6 @@ function init() {
     wall.push(new Rectangle(100, 220, 400, 10));
 
 // Start the game
-    resize();
     run();
     repaint();
 }
@@ -238,6 +242,11 @@ gameScene.paint = function (ctx) {
     //ctx.drawImage(iFood, food.x, food.y);
     food.drawImage(ctx, iFood);
 
+// Draw special fruit
+    if (bonusFruit = true) {
+        specialFruit.drawImage(ctx, iSpecialFruit);
+    } 
+
 // Draw walls
     ctx.fillStyle = '#f00';
     for (i = 0, l = wall.length; i < l; i += 1) {
@@ -275,10 +284,10 @@ gameScene.act = function () {
     var i = 0;
     var l = 0;
     if(!pause) {
-
+        
 // GameOver Reset
         if (gameover || congratulations) {
-            reset();
+            loadScene(mainScene);
         }
 
 // Move Body
@@ -345,6 +354,24 @@ gameScene.act = function () {
             food.y = random(canvas.height / 10 - 1) * 10;
             aEat.play();
         }
+
+// Special fruit Intersects
+        if (body[0].intersects(specialFruit) && bonusFruit === true) {
+            score += 50;
+            specialFruit.x = random(canvas.width / 20 - 1) * 20;
+            specialFruit.y = random(canvas.height / 20 - 1) * 20;
+            aEat.play();
+            bonusFruit = false;
+
+// Asynchronous call
+            fetch ("https://jsonplaceholder.typicode.com/?score="+score)
+            .then (function (response){
+                console.log("Score sent succssfully");
+            })
+            .catch (function (error){
+                console.log("Error trying to send the score")
+            })
+        }  
     
 // Wall Intersects
         for (i = 0, l = wall.length; i < l; i += 1) {
@@ -352,14 +379,22 @@ gameScene.act = function () {
                 food.x = random(canvas.width / 10 - 1) * 10;
                 food.y = random(canvas.height / 10 - 1) * 10;
             }
+            if (specialFruit.intersects(wall[i])) {
+                specialFruit.x = random(canvas.width / 10 - 1) * 10;
+                specialFruit.y = random(canvas.height / 10 - 1) * 10;
+            }
             if (body[0].intersects(wall[i])) {
                 gameover = true;
                 pause = true;
                 aDie.play();
             }
         } 
+        setTimeout (bonus, 10000);
+            function bonus () {
+                bonusFruit = true;
+            }
 // Congratulations
-        if (score >= 1000){
+        if (score >= 500){
             pause = true;
             congratulations = true;
         }
